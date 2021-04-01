@@ -3,19 +3,19 @@ Github Action to upload to Tencent Cloud COS
 
 ## Inputs
 
-### `secret_id`
+### `access_key`
 
-**Required** Tencent Cloud secret id. Should be referred to a encrypted environment variable.
+**Required** DogeCloud access key. Should be referred to a encrypted environment variable.
 
 ### `secret_key`
 
-**Required** Tencent Cloud secret key. Should be referred to a encrypted environment variable.
+**Required** DogeCloud secret key. Should be referred to a encrypted environment variable.
 
-### `cos_bucket`
+### `bucket`
 
 **Required** COS bucket name.
 
-### `cos_region`
+### `region`
 
 **Required** COS bucket region.
 
@@ -34,12 +34,12 @@ Github Action to upload to Tencent Cloud COS
 ## Example usage
 
 ```
-uses: TencentCloud/cos-action@v1
+uses: zu1k/dogecloud-cos-action@v0.1
 with:
-  secret_id: ${{ secrets.TENCENT_CLOUD_SECRET_ID }}
-  secret_key: ${{ secrets.TENCENT_CLOUD_SECRET_KEY }}
-  cos_bucket: ${{ secrets.COS_BUCKET }}
-  cos_region: ${{ secrets.COS_REGION }}
+  access_key: ${{ secrets.ACCESS_KEY }}
+  secret_key: ${{ secrets.SECRET_KEY }}
+  bucket: ${{ secrets.BUCKET }}
+  region: ${{ secrets.REGION }}
   local_path: build
   remote_path: docroot/static
   clean: true

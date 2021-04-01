@@ -3,6 +3,8 @@ const github = require('@actions/github');
 const COS = require('cos-nodejs-sdk-v5');
 const fs = require('fs');
 const Path = require('path');
+const request = require('request');
+const crypto = require('crypto');
 
 const walk = async (path, walkFn) => {
     stats = await fs.promises.lstat(path);
@@ -158,12 +160,42 @@ const process = async (cos) => {
 
 try {
     const cos = {
-        cli: new COS({
-            SecretId: core.getInput('secret_id'),
-            SecretKey: core.getInput('secret_key'),
+        cli:  new COS({
+            getAuthorization: function (options, callback) {
+                var bodyJSON = JSON.stringify({
+                    channel: 'OSS_FULL',
+                    scopes: ['*']
+                });
+                var apiUrl = '/auth/tmp_token.json'; 
+                var signStr = apiUrl + '\n' + bodyJSON;
+                var sign = crypto.createHmac('sha1', core.getInput('secret_key')).update(Buffer.from(signStr, 'utf8')).digest('hex');
+                var authorization = 'TOKEN ' + core.getInput('access_key') + ':' + sign;
+                
+                request({
+                    url: 'https://api.dogecloud.com' + apiUrl,
+                    method: 'POST',
+                    body: bodyJSON,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': authorization
+                    }
+                }, function (err, response, body) {
+                    if (err) { console.log('Request Error'); return }
+                    body = JSON.parse(body);
+                    if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); return }
+                    var data = body && body.data;
+                    const credentials = data.Credentials;
+                    callback({
+                        TmpSecretId: credentials.accessKeyId,
+                        TmpSecretKey: credentials.secretAccessKey,
+                        XCosSecurityToken: credentials.sessionToken,
+                        ExpiredTime: data.ExpiredAt,
+                    });
+                });
+            }
         }),
-        bucket: core.getInput('cos_bucket'),
-        region: core.getInput('cos_region'),
+        bucket: core.getInput('bucket'),
+        region: core.getInput('region'),
         localPath: core.getInput('local_path'),
         remotePath: core.getInput('remote_path'),
         clean: core.getInput('clean') === 'true'
