@@ -1,5 +1,5 @@
 # cos-action
-Github Action to upload to Tencent Cloud COS
+Github Action to upload to DogeCloud COS
 
 ## Inputs
 
