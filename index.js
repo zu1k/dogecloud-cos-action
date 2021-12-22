@@ -25,7 +25,7 @@ const uploadFileToCOS = (cos, path) => {
             Region: cos.region,
             Key: Path.join(cos.remotePath, path),
             StorageClass: 'STANDARD',
-            Body: fs.createReadStream(Path.join(cos.localPath, path)), 
+            Body: fs.createReadStream(Path.join(cos.localPath, path)),
         }, function(err, data) {
             if (err) {
                 return reject(err);
@@ -202,7 +202,7 @@ try {
     };
 
     process(cos).catch((reason) => {
-        core.setFailed(`fail to upload files to cos: ${reason}`);
+        core.setFailed(`fail to upload files to cos: ${reason.message}`);
     });
 } catch (error) {
     core.setFailed(error.message);
