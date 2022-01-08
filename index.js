@@ -192,7 +192,8 @@ try {
                         ExpiredTime: data.ExpiredAt,
                     });
                 });
-            }
+            },
+            Domain: core.getInput('accelerate') === 'true' ? '{Bucket}.cos.accelerate.myqcloud.com' : undefined,
         }),
         bucket: core.getInput('bucket'),
         region: core.getInput('region'),
