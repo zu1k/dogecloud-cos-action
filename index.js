@@ -26,7 +26,7 @@ const uploadFileToCOS = (cos, path) => {
             Key: Path.join(cos.remotePath, path),
             StorageClass: 'STANDARD',
             Body: fs.createReadStream(Path.join(cos.localPath, path)),
-        }, function(err, data) {
+        }, function (err, data) {
             if (err) {
                 return reject(err);
             } else {
@@ -42,7 +42,7 @@ const deleteFileFromCOS = (cos, path) => {
             Bucket: cos.bucket,
             Region: cos.region,
             Key: Path.join(cos.remotePath, path)
-        }, function(err, data) {
+        }, function (err, data) {
             if (err) {
                 return reject(err);
             } else {
@@ -59,7 +59,7 @@ const listFilesOnCOS = (cos, nextMarker) => {
             Region: cos.region,
             Prefix: cos.remotePath,
             NextMarker: nextMarker
-        }, function(err, data) {
+        }, function (err, data) {
             if (err) {
                 return reject(err);
             } else {
@@ -74,7 +74,7 @@ const collectLocalFiles = async (cos) => {
     const files = new Set();
     await walk(root, (path) => {
         let p = path.substring(root.length);
-        for (;p[0] === '/';) {
+        for (; p[0] === '/';) {
             p = p.substring(1);
         }
         files.add(p);
@@ -86,12 +86,16 @@ const uploadFiles = async (cos, localFiles) => {
     const size = localFiles.size;
     let index = 0;
     let percent = 0;
-    for (const file of localFiles) {
-        await uploadFileToCOS(cos, file);
+    let tasks = [];
+    let callback = () => {
         index++;
         percent = parseInt(index / size * 100);
         console.log(`>> [${index}/${size}, ${percent}%] uploaded ${Path.join(cos.localPath, file)}`);
+    };
+    for (const file of localFiles) {
+        tasks.push(uploadFileToCOS(cos, file).then(callback).catch((err) => console.error(err)));
     }
+    await Promise.all(tasks);
 }
 
 const collectRemoteFiles = async (cos) => {
@@ -103,7 +107,7 @@ const collectRemoteFiles = async (cos) => {
         data = await listFilesOnCOS(cos, nextMarker);
         for (const e of data.Contents) {
             let p = e.Key.substring(cos.remotePath.length);
-            for (;p[0] === '/';) {
+            for (; p[0] === '/';) {
                 p = p.substring(1);
             }
             files.add(p);
@@ -160,17 +164,17 @@ const process = async (cos) => {
 
 try {
     const cos = {
-        cli:  new COS({
+        cli: new COS({
             getAuthorization: function (options, callback) {
                 var bodyJSON = JSON.stringify({
                     channel: 'OSS_FULL',
                     scopes: ['*']
                 });
-                var apiUrl = '/auth/tmp_token.json'; 
+                var apiUrl = '/auth/tmp_token.json';
                 var signStr = apiUrl + '\n' + bodyJSON;
                 var sign = crypto.createHmac('sha1', core.getInput('secret_key')).update(Buffer.from(signStr, 'utf8')).digest('hex');
                 var authorization = 'TOKEN ' + core.getInput('access_key') + ':' + sign;
-                
+
                 request({
                     url: 'https://api.dogecloud.com' + apiUrl,
                     method: 'POST',
@@ -180,9 +184,17 @@ try {
                         'Authorization': authorization
                     }
                 }, function (err, response, body) {
-                    if (err) { console.log('Request Error'); return }
+                    if (err) {
+                        console.log('Request Error');
+                        return
+                    }
                     body = JSON.parse(body);
-                    if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); return }
+                    if (body.code !== 200) {
+                        console.log(JSON.stringify({
+                            error: 'API Error: ' + body.msg
+                        }));
+                        return
+                    }
                     var data = body && body.data;
                     const credentials = data.Credentials;
                     callback({
