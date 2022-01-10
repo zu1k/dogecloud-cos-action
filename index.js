@@ -87,10 +87,10 @@ const uploadFiles = async (cos, localFiles) => {
     let index = 0;
     let percent = 0;
     let tasks = [];
-    let callback = () => {
+    let callback = (file) => {
         index++;
         percent = parseInt(index / size * 100);
-        console.log(`>> [${index}/${size}, ${percent}%] uploaded ${Path.join(cos.localPath, file)}`);
+        console.log(`>> [${index}/${size}, ${percent}%]`);
     };
     for (const file of localFiles) {
         tasks.push(uploadFileToCOS(cos, file).then(callback).catch((err) => console.error(err)));
